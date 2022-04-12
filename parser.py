@@ -173,7 +173,7 @@ def load_annotations(data_folder):
         if object_id is None:
             continue
         else:
-            doc['object']['NCBIGene'] = entrez_id
+            doc['object']['NCBIGene'] = "" if entrez_id is None else entrez_id
             doc['object']['SYMBOL'] = gene_name
             doc['object']['id'] = object_id
 
@@ -185,8 +185,8 @@ def load_annotations(data_folder):
         if subject_id is None:
             continue
         else:
+            doc['subject']['CHEMBL_COMPOUND'] = "" if drug_chembl_id is None else drug_chembl_id
             doc['subject']['name'] = drug_name
-            doc['subject']['CHEMBL_COMPOUND'] = drug_chembl_id
             doc['subject']['id'] = subject_id
 
         # Association
