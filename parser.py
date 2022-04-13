@@ -11,18 +11,18 @@ from biothings.utils.dataload import tabfile_feeder, dict_sweep, unlist
 0 | gene_name                | object.SYMBOL
 1 | gene_claim_name          |
 2 | entrez_id                | object.NCBIGene
-3 | interaction_claim_source | association.provided_by
-4 | interaction_types        | association.relation_name
+3 | interaction_claim_source | association.interaction_claim_source
+4 | interaction_types        | association.interaction_types
 5 | drug_claim_name          |
 6 | drug_claim_primary_name  |
-7 | drug_name                | subject.name
+7 | drug_name                | subject.drug_name
 8 | drug_concept_id          | subject.CHEMBL_COMPOUND
 9 | interaction_group_score  | association.interaction_group_score
-10| PMIDs                    | association.pubmed
+10| PMIDs                    | association.pmids
 """
 
 
-def query_entrez_id(gene_name) -> str:
+def query_entrez_id(gene_name: str) -> str:
     """
     Find entrez id associated with given gene name through MyGene API.
     """
@@ -37,7 +37,7 @@ def query_entrez_id(gene_name) -> str:
     return None
 
 
-def query_chembl_id(drug_name) -> str:
+def query_chembl_id(drug_name: str) -> str:
     """
     Find chembl id associated with given drug name through MyChem API.
     """
@@ -113,14 +113,14 @@ def verify_drug_concept_id(drug_concept_id: str, drug_name: str) -> str:
     Check if the given drug concept id contains a valid chembl id.
 
     A given drug concept id could be
-        
+
         1. emtpy,
         2. a CURIE-like wikidata id, e.g. "wikidata:Q419808", or
         3. a CURIE-like chembl id, e.g. chembl:CHEMBL942.
 
     In case 1 and 2, the drug name is used to query its associated chemble id, without the "chembl:" prefix.
     If the drug name is empty, return None.
-    
+
     In case 3, a chembl id is returned from substringing the given drug concept id.
     """
     if is_empty(drug_concept_id) or drug_concept_id.startswith("wikidata:"):
@@ -148,6 +148,15 @@ def create_subject_id(drug_chembl_id: str, drug_name: str) -> str:
             return "name:" + drug_name
 
     return 'CHEMBL.COMPOUND:' + drug_chembl_id
+
+
+def parse_interaction_types(interaction_types: str) -> List[str]:
+    if is_empty(interaction_types):
+        return ["not_applicable"]
+
+    # E.g. single interaction "partial agonist" will be converted to ["partial_agonist"]
+    # E.g. multi interactions "agonist,antagonist" will be converted to ["agonist", "antagonist"]
+    return interaction_types.replace(" ", "_").split(",")
 
 
 def load_annotations(data_folder):
@@ -186,20 +195,20 @@ def load_annotations(data_folder):
             continue
         else:
             doc['subject']['CHEMBL_COMPOUND'] = "" if drug_chembl_id is None else drug_chembl_id
-            doc['subject']['name'] = drug_name
+            doc['subject']['drug_name'] = drug_name
             doc['subject']['id'] = subject_id
 
         # Association
-        interaction_types = rec[col_index["interaction_types"]].replace(" ", "_").split(",")
+        interaction_types = parse_interaction_types(rec[col_index["interaction_types"]])
         interaction_claim_source = rec[col_index["interaction_claim_source"]]
         interaction_group_score = rec[col_index["interaction_group_score"]]
         pmids = rec[col_index["PMIDs"]].split(",")
 
-        doc['association']['relation_name'] = interaction_types
-        doc['association']['provided_by'] = interaction_claim_source
+        doc['association']['interaction_types'] = interaction_types
+        doc['association']['interaction_claim_source'] = interaction_claim_source
         doc['association']['interaction_group_score'] = float(interaction_group_score)
-        doc['association']['pubmed'] = pmids
-        
+        doc['association']['pmids'] = pmids
+
         # Cleanup
         doc = dict_sweep(doc)
         doc = unlist(doc)
