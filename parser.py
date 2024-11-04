@@ -30,8 +30,8 @@ def query_entrez_id(gene_name: str) -> str:
     response = requests.get(query)
     if response.status_code == 200:
         data = response.json()
-        if data['hits']:  # data['hits'] could be an empty list
-            entrez_id = data['hits'][0]['entrezgene']
+        if data["hits"]:  # data['hits'] could be an empty list
+            entrez_id = data["hits"][0]["entrezgene"]
             if entrez_id != "":
                 return entrez_id
     return None
@@ -45,8 +45,8 @@ def query_chembl_id(drug_name: str) -> str:
     response = requests.get(query)
     if response.status_code == 200:
         data = response.json()
-        if data['hits']:  # data['hits'] could be an empty list
-            chembl_id = data['hits'][0]['chembl']['molecule_chembl_id']
+        if data["hits"]:  # data['hits'] could be an empty list
+            chembl_id = data["hits"][0]["chembl"]["molecule_chembl_id"]
             if chembl_id != "":
                 return chembl_id
     return None
@@ -56,7 +56,7 @@ def create_doc_id(record: List[str]) -> str:
     """
     For each record (received as a list of strings), create a hash string as its ID
     """
-    bytestr = bytearray("-".join(record), 'utf-8')
+    bytestr = bytearray("-".join(record), "utf-8")
     hashstr = hashlib.blake2b(bytestr, digest_size=8).hexdigest()
     return hashstr
 
@@ -103,9 +103,9 @@ def create_object_id(entrez_id: str, gene_name: str) -> str:
         if is_empty(gene_name):
             return None  # a None id indicates discarding the whole record
         else:
-            return 'name:' + gene_name
+            return "name:" + gene_name
 
-    return 'NCBIGene:' + entrez_id
+    return "NCBIGene:" + entrez_id
 
 
 def verify_drug_concept_id(drug_concept_id: str, drug_name: str) -> str:
@@ -128,7 +128,7 @@ def verify_drug_concept_id(drug_concept_id: str, drug_name: str) -> str:
             return None
         drug_chembl_id = query_chembl_id(drug_name)
     elif drug_concept_id.startswith("chembl:"):
-        drug_chembl_id = drug_concept_id.split(':')[-1]
+        drug_chembl_id = drug_concept_id.split(":")[-1]
     else:
         raise ValueError(f"Cannot parse drug concept id {drug_concept_id} (associated drug name is {drug_name})")
 
@@ -147,7 +147,7 @@ def create_subject_id(drug_chembl_id: str, drug_name: str) -> str:
         else:
             return "name:" + drug_name
 
-    return 'CHEMBL.COMPOUND:' + drug_chembl_id
+    return "CHEMBL.COMPOUND:" + drug_chembl_id
 
 
 def parse_interaction_types(interaction_types: str) -> List[str]:
@@ -167,12 +167,7 @@ def load_annotations(data_folder):
 
     for rec in data:
         # Document framework
-        doc = {
-            "_id": create_doc_id(rec),
-            "subject": {},
-            "object": {},
-            "association": {}
-        }
+        doc = {"_id": create_doc_id(rec), "subject": {}, "object": {}, "association": {}}
 
         # Object
         entrez_id = rec[col_index["entrez_id"]]
@@ -182,9 +177,9 @@ def load_annotations(data_folder):
         if object_id is None:
             continue
         else:
-            doc['object']['NCBIGene'] = "" if entrez_id is None else entrez_id
-            doc['object']['SYMBOL'] = gene_name
-            doc['object']['id'] = object_id
+            doc["object"]["NCBIGene"] = "" if entrez_id is None else entrez_id
+            doc["object"]["SYMBOL"] = gene_name
+            doc["object"]["id"] = object_id
 
         # Subject
         drug_name = rec[col_index["drug_name"]]
@@ -194,9 +189,9 @@ def load_annotations(data_folder):
         if subject_id is None:
             continue
         else:
-            doc['subject']['CHEMBL_COMPOUND'] = "" if drug_chembl_id is None else drug_chembl_id
-            doc['subject']['drug_name'] = drug_name
-            doc['subject']['id'] = subject_id
+            doc["subject"]["CHEMBL_COMPOUND"] = "" if drug_chembl_id is None else drug_chembl_id
+            doc["subject"]["drug_name"] = drug_name
+            doc["subject"]["id"] = subject_id
 
         # Association
         interaction_types = parse_interaction_types(rec[col_index["interaction_types"]])
@@ -204,10 +199,10 @@ def load_annotations(data_folder):
         interaction_group_score = rec[col_index["interaction_group_score"]]
         pmids = rec[col_index["PMIDs"]].split(",")
 
-        doc['association']['interaction_types'] = interaction_types
-        doc['association']['interaction_claim_source'] = interaction_claim_source
-        doc['association']['interaction_group_score'] = float(interaction_group_score)
-        doc['association']['pmids'] = pmids
+        doc["association"]["interaction_types"] = interaction_types
+        doc["association"]["interaction_claim_source"] = interaction_claim_source
+        doc["association"]["interaction_group_score"] = float(interaction_group_score)
+        doc["association"]["pmids"] = pmids
 
         # Cleanup
         doc = dict_sweep(doc)

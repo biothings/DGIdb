@@ -2,7 +2,7 @@
     "version": "0.1",
     "requires" : ["biothings", "pyyaml"],
     "dumper": {
-        "data_url": ["https://www.dgidb.org/data/monthly_tsvs/2022-Feb/interactions.tsv"],
+        "data_url": ["https://www.dgidb.org/data/2022-Feb/interactions.tsv"],
         "uncompress": false,
         "release": "version:get_release"
     },
